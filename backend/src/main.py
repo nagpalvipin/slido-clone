@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
 from src.core.database import Base, engine
-from src.api import events
+from src.api import events, polls, questions, websocket
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -31,6 +31,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(events.router)
+app.include_router(polls.router)
+app.include_router(questions.router)
+app.include_router(websocket.router)
 
 @app.get("/")
 async def root():

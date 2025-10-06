@@ -21,12 +21,15 @@ class TestPollsPostContract:
     @pytest.fixture
     def sample_event(self, client):
         """Create a sample event for testing."""
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         event_data = {
-            "title": "Poll Test Workshop",
-            "slug": "poll-workshop",
-            "description": "Workshop for poll testing"
+            "title": f"Poll Test Workshop {unique_id}",
+            "slug": f"poll-workshop-{unique_id}",
+            "description": f"Workshop for poll testing - {unique_id}"
         }
         response = client.post("/api/v1/events", json=event_data)
+        assert response.status_code == 201, f"Event creation failed: {response.status_code} - {response.json()}"
         return response.json()
 
     def test_create_poll_success(self, client, sample_event):
@@ -94,17 +97,18 @@ class TestPollsPostContract:
         assert response.status_code == 401
 
     def test_create_poll_invalid_host_code(self, client, sample_event):
-        """Test poll creation with invalid host code."""
+        """Test poll creation with wrong host code (valid format but wrong code)."""
         poll_data = {
             "question_text": "Test Question",
             "poll_type": "single",
             "options": [
-                {"option_text": "Option 1", "position": 0}
+                {"option_text": "Option 1", "position": 0},
+                {"option_text": "Option 2", "position": 1}
             ]
         }
-        headers = {"Authorization": "Host invalid_code"}
+        headers = {"Authorization": "Host host_wrongcode123"}
 
-        # When: Creating poll with invalid host code
+        # When: Creating poll with valid format but wrong host code
         response = client.post(
             f"/api/v1/events/{sample_event['id']}/polls",
             json=poll_data,
@@ -112,6 +116,28 @@ class TestPollsPostContract:
         )
 
         # Then: Unauthorized error is returned
+        assert response.status_code == 401
+    
+    def test_create_poll_malformed_host_code(self, client, sample_event):
+        """Test poll creation with malformed host code."""
+        poll_data = {
+            "question_text": "Test Question",
+            "poll_type": "single",
+            "options": [
+                {"option_text": "Option 1", "position": 0},
+                {"option_text": "Option 2", "position": 1}
+            ]
+        }
+        headers = {"Authorization": "Host invalid_code"}
+
+        # When: Creating poll with malformed host code
+        response = client.post(
+            f"/api/v1/events/{sample_event['id']}/polls",
+            json=poll_data,
+            headers=headers
+        )
+
+        # Then: Unauthorized error is returned (malformed auth header)
         assert response.status_code == 401
 
     def test_create_poll_validation_errors(self, client, sample_event):
@@ -166,7 +192,10 @@ class TestPollsPostContract:
         poll_data = {
             "question_text": "Test Question",
             "poll_type": "single",
-            "options": [{"option_text": "Option 1", "position": 0}]
+            "options": [
+                {"option_text": "Option 1", "position": 0},
+                {"option_text": "Option 2", "position": 1}
+            ]
         }
         headers = {"Authorization": f"Host {sample_event['host_code']}"}
 

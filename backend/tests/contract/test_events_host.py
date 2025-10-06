@@ -7,26 +7,15 @@ Tests verify the host view API contract against spec.
 
 import pytest
 from fastapi.testclient import TestClient
-from src.main import app
 
 
 class TestEventsHostContract:
     """Contract tests for host event view."""
 
     @pytest.fixture
-    def client(self):
-        """FastAPI test client."""
-        return TestClient(app)
-
-    @pytest.fixture
-    def sample_event(self, client):
+    def sample_event(self, client, sample_event_data):
         """Create a sample event for testing."""
-        event_data = {
-            "title": "Host Workshop",
-            "slug": "host-workshop",
-            "description": "Workshop with host access"
-        }
-        response = client.post("/api/v1/events", json=event_data)
+        response = client.post("/api/v1/events", json=sample_event_data)
         return response.json()
 
     def test_get_host_view_success(self, client, sample_event):

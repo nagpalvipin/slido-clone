@@ -7,26 +7,15 @@ Tests verify the events retrieval API contract against spec.
 
 import pytest
 from fastapi.testclient import TestClient
-from src.main import app
 
 
 class TestEventsGetContract:
     """Contract tests for retrieving events by slug."""
 
     @pytest.fixture
-    def client(self):
-        """FastAPI test client."""
-        return TestClient(app)
-
-    @pytest.fixture
-    def sample_event(self, client):
+    def sample_event(self, client, sample_event_data):
         """Create a sample event for testing."""
-        event_data = {
-            "title": "Sample Workshop",
-            "slug": "sample-workshop",
-            "description": "A sample workshop for testing"
-        }
-        response = client.post("/api/v1/events", json=event_data)
+        response = client.post("/api/v1/events", json=sample_event_data)
         return response.json()
 
     def test_get_event_success(self, client, sample_event):

@@ -7,16 +7,10 @@ Tests verify the events creation API contract against spec.
 
 import pytest
 from fastapi.testclient import TestClient
-from src.main import app
 
 
 class TestEventsPostContract:
     """Contract tests for creating events."""
-
-    @pytest.fixture
-    def client(self):
-        """FastAPI test client."""
-        return TestClient(app)
 
     def test_create_event_success(self, client):
         """Test successful event creation with valid data."""

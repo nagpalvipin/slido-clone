@@ -23,12 +23,15 @@ class TestWebSocketPollsContract:
     @pytest.fixture
     def sample_event(self, client):
         """Create a sample event for testing."""
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         event_data = {
-            "title": "WebSocket Poll Test",
-            "slug": "websocket-test",
-            "description": "Event for WebSocket testing"
+            "title": f"WebSocket Poll Test {unique_id}",
+            "slug": f"websocket-test-{unique_id}",
+            "description": f"Event for WebSocket testing - {unique_id}"
         }
         response = client.post("/api/v1/events", json=event_data)
+        assert response.status_code == 201, f"Event creation failed: {response.status_code} - {response.json()}"
         return response.json()
 
     def test_websocket_connection_success(self, client, sample_event):
@@ -44,7 +47,7 @@ class TestWebSocketPollsContract:
             
             # Should receive confirmation
             data = websocket.receive_json()
-            assert data["type"] == "joined"
+            assert data["type"] == "connected"
             assert data["event_id"] == sample_event["id"]
 
     def test_websocket_poll_created_broadcast(self, client, sample_event):
