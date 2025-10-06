@@ -119,9 +119,17 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 ## Validation Checklist
 *GATE: Checked by main() before returning*
 
+### Task Completeness
 - [ ] All contracts have corresponding tests
 - [ ] All entities have model tasks
 - [ ] All tests come before implementation
 - [ ] Parallel tasks truly independent
 - [ ] Each task specifies exact file path
 - [ ] No task modifies same file as another [P] task
+
+### Constitutional Compliance
+- [ ] Code quality tasks include linting, formatting, static analysis setup
+- [ ] Coverage targets defined (85% unit, 70% integration minimum)
+- [ ] Performance testing tasks included with specific benchmarks
+- [ ] Accessibility validation tasks included for UI components
+- [ ] TDD approach enforced: failing tests before implementation
