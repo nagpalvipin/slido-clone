@@ -75,32 +75,32 @@
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
 ### Database Models
-- [ ] T024 [P] Event model in backend/src/models/event.py
-- [ ] T025 [P] Poll model in backend/src/models/poll.py  
-- [ ] T026 [P] PollOption model in backend/src/models/poll_option.py
-- [ ] T027 [P] PollResponse model in backend/src/models/poll_response.py
-- [ ] T028 [P] Question model in backend/src/models/question.py
+- [x] T024 [P] Event model in backend/src/models/event.py
+- [x] T025 [P] Poll model in backend/src/models/poll.py  
+- [x] T026 [P] PollOption model in backend/src/models/poll_option.py
+- [x] T027 [P] PollResponse model in backend/src/models/poll_response.py
+- [x] T028 [P] Question model in backend/src/models/question.py
 - [ ] T029 [P] QuestionVote model in backend/src/models/question_vote.py
-- [ ] T030 [P] Attendee model in backend/src/models/attendee.py
-- [ ] T031 Database models __init__.py imports in backend/src/models/__init__.py
+- [x] T030 [P] Attendee model in backend/src/models/attendee.py
+- [x] T031 Database models __init__.py imports in backend/src/models/__init__.py
 
 ### Business Services  
-- [ ] T032 [P] EventService CRUD operations in backend/src/services/event_service.py
-- [ ] T033 [P] PollService with voting logic in backend/src/services/poll_service.py
-- [ ] T034 [P] QuestionService with moderation logic in backend/src/services/question_service.py
-- [ ] T035 Services __init__.py imports in backend/src/services/__init__.py
+- [x] T032 [P] EventService CRUD operations in backend/src/services/event_service.py
+- [x] T033 [P] PollService with voting logic in backend/src/services/poll_service.py
+- [x] T034 [P] QuestionService with moderation logic in backend/src/services/question_service.py
+- [x] T035 Services __init__.py imports in backend/src/services/__init__.py
 
 ### Core Configuration
-- [ ] T036 [P] Database configuration in backend/src/core/database.py
-- [ ] T037 [P] Application config in backend/src/core/config.py
-- [ ] T038 [P] Security utilities in backend/src/core/security.py
+- [x] T036 [P] Database configuration in backend/src/core/database.py
+- [x] T037 [P] Application config in backend/src/core/config.py
+- [x] T038 [P] Security utilities in backend/src/core/security.py
 
 ### API Endpoints
-- [ ] T039 Events API router in backend/src/api/events.py (depends on EventService)
+- [x] T039 Events API router in backend/src/api/events.py (depends on EventService)
 - [ ] T040 Polls API router in backend/src/api/polls.py (depends on PollService)  
 - [ ] T041 Questions API router in backend/src/api/questions.py (depends on QuestionService)
 - [ ] T042 WebSocket handler in backend/src/api/websocket.py (depends on all services)
-- [ ] T043 FastAPI main application in backend/src/main.py (depends on all routers)
+- [x] T043 FastAPI main application in backend/src/main.py (depends on all routers)
 
 ## Phase 3.4: Integration
 
