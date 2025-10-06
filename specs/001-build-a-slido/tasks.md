@@ -54,20 +54,20 @@
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests (API Endpoints)
-- [ ] T009 [P] Contract test POST /api/v1/events in backend/tests/contract/test_events_post.py
-- [ ] T010 [P] Contract test GET /api/v1/events/{slug} in backend/tests/contract/test_events_get.py
-- [ ] T011 [P] Contract test GET /api/v1/events/{slug}/host in backend/tests/contract/test_events_host.py
-- [ ] T012 [P] Contract test POST /api/v1/events/{event_id}/polls in backend/tests/contract/test_polls_post.py
-- [ ] T013 [P] Contract test PUT /api/v1/events/{event_id}/polls/{poll_id}/status in backend/tests/contract/test_polls_status.py
-- [ ] T014 [P] Contract test POST /api/v1/events/{event_id}/polls/{poll_id}/vote in backend/tests/contract/test_polls_vote.py
+- [x] T009 [P] Contract test POST /api/v1/events in backend/tests/contract/test_events_post.py
+- [x] T010 [P] Contract test GET /api/v1/events/{slug} in backend/tests/contract/test_events_get.py
+- [x] T011 [P] Contract test GET /api/v1/events/{slug}/host in backend/tests/contract/test_events_host.py
+- [x] T012 [P] Contract test POST /api/v1/events/{event_id}/polls in backend/tests/contract/test_polls_post.py
+- [x] T013 [P] Contract test PUT /api/v1/events/{event_id}/polls/{poll_id}/status in backend/tests/contract/test_polls_status.py
+- [x] T014 [P] Contract test POST /api/v1/events/{event_id}/polls/{poll_id}/vote in backend/tests/contract/test_polls_vote.py
 - [ ] T015 [P] Contract test POST /api/v1/events/{event_id}/questions in backend/tests/contract/test_questions_post.py
 - [ ] T016 [P] Contract test POST /api/v1/events/{event_id}/questions/{question_id}/upvote in backend/tests/contract/test_questions_upvote.py
 - [ ] T017 [P] Contract test PUT /api/v1/events/{event_id}/questions/{question_id}/status in backend/tests/contract/test_questions_moderate.py
-- [ ] T018 [P] WebSocket contract test for real-time poll updates in backend/tests/contract/test_websocket_polls.py
+- [x] T018 [P] WebSocket contract test for real-time poll updates in backend/tests/contract/test_websocket_polls.py
 - [ ] T019 [P] WebSocket contract test for real-time question updates in backend/tests/contract/test_websocket_questions.py
 
 ### Integration Tests (User Workflows)
-- [ ] T020 [P] Integration test complete host workflow in backend/tests/integration/test_host_workflow.py
+- [x] T020 [P] Integration test complete host workflow in backend/tests/integration/test_host_workflow.py
 - [ ] T021 [P] Integration test attendee participation flow in backend/tests/integration/test_attendee_workflow.py
 - [ ] T022 [P] Integration test Q&A moderation workflow in backend/tests/integration/test_qa_moderation.py
 - [ ] T023 [P] Integration test real-time synchronization in backend/tests/integration/test_realtime_sync.py
