@@ -1,8 +1,8 @@
 
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Live Q&A & Polls Application
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `001-build-a-slido` | **Date**: 2025-10-06 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/001-build-a-slido/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -31,18 +31,18 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-[Extract from feature spec: primary requirement + technical approach from research]
+Build a live Q&A & Polls application for educational courses, enabling hosts to create events with real-time polling and moderated Q&A queues. System supports anonymous attendee participation, live result visualization, and real-time upvoting with WebSocket-based updates. Technical approach: FastAPI backend with WebSocket support, React frontend, SQLite persistence, and containerized deployment for educational environments.
 
 ## Technical Context
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.11+ (backend), Node.js 18+ (frontend build)  
+**Primary Dependencies**: FastAPI, SQLAlchemy, Alembic, React, Tailwind CSS, WebSocket support  
+**Storage**: SQLite with SQLAlchemy ORM and Alembic migrations  
+**Testing**: pytest (backend), React Testing Library + Jest (frontend)  
+**Target Platform**: Docker containers for cross-platform educational deployment
+**Project Type**: web - determines frontend + backend structure  
+**Performance Goals**: <100ms real-time updates via WebSocket, <300ms API response times, 60fps UI animations  
+**Constraints**: Educational environment deployment, local SQLite for simplicity, containerized for portability  
+**Scale/Scope**: 100 concurrent users per session, 50+ polls per event, 200+ questions per session
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -68,50 +68,56 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+│   ├── models/          # SQLAlchemy ORM models
+│   │   ├── event.py
+│   │   ├── poll.py
+│   │   ├── question.py
+│   │   └── attendee.py
+│   ├── api/             # FastAPI routers and endpoints
+│   │   ├── events.py
+│   │   ├── polls.py
+│   │   ├── questions.py
+│   │   └── websocket.py
+│   ├── services/        # Business logic layer
+│   │   ├── event_service.py
+│   │   ├── poll_service.py
+│   │   └── question_service.py
+│   ├── core/           # Configuration and database
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   └── security.py
+│   └── main.py         # FastAPI application entry
+├── tests/
+│   ├── contract/       # API contract tests
+│   ├── integration/    # End-to-end workflow tests
+│   └── unit/          # Unit tests for services/models
+├── alembic/           # Database migrations
+└── requirements.txt
 
 frontend/
 ├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+│   ├── components/     # Reusable React components
+│   │   ├── common/     # Shared UI components
+│   │   ├── polls/      # Poll-related components
+│   │   └── questions/  # Q&A components
+│   ├── pages/          # Route-level components
+│   │   ├── host/       # Host dashboard views
+│   │   └── attendee/   # Attendee participation views
+│   ├── hooks/          # Custom React hooks
+│   ├── services/       # API client and WebSocket
+│   └── utils/          # Utilities and helpers
+├── tests/
+└── package.json
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+docker-compose.yml      # Local development environment
+Dockerfile.backend      # Backend container
+Dockerfile.frontend     # Frontend container
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Web application structure selected with separate backend and frontend directories. Backend uses FastAPI with clear separation of models, API routes, and services. Frontend uses React with component-based architecture and shared utilities.
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
@@ -173,17 +179,20 @@ directories captured above]
 **Task Generation Strategy**:
 - Load `.specify/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
-- Each contract → contract test task [P]
-- Each entity → model creation task [P] 
-- Each user story → integration test task
-- Implementation tasks to make tests pass
+- Each API contract (events, polls, questions, websocket) → contract test task [P]
+- Each entity (Event, Poll, Question, Attendee, etc.) → model creation task [P]
+- Each user workflow from quickstart → integration test task
+- WebSocket real-time features → specialized testing tasks
+- Docker deployment → containerization tasks
+- Implementation tasks to make all tests pass
 
 **Ordering Strategy**:
-- TDD order: Tests before implementation 
-- Dependency order: Models before services before UI
-- Mark [P] for parallel execution (independent files)
+- TDD order: Contract tests → Integration tests → Implementation
+- Dependency order: Database models → Services → API endpoints → WebSocket → UI
+- Mark [P] for parallel execution (independent files/modules)
+- Constitutional compliance: Quality gates at each phase
 
-**Estimated Output**: 25-30 numbered, ordered tasks in tasks.md
+**Estimated Output**: 30-35 numbered, ordered tasks in tasks.md covering backend API, real-time WebSocket features, React frontend, and Docker deployment
 
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
@@ -207,18 +216,18 @@ directories captured above]
 *This checklist is updated during execution flow*
 
 **Phase Status**:
-- [ ] Phase 0: Research complete (/plan command)
-- [ ] Phase 1: Design complete (/plan command)
-- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
+- [x] Phase 0: Research complete (/plan command)
+- [x] Phase 1: Design complete (/plan command)
+- [x] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-- [ ] Initial Constitution Check: PASS
-- [ ] Post-Design Constitution Check: PASS
-- [ ] All NEEDS CLARIFICATION resolved
-- [ ] Complexity deviations documented
+- [x] Initial Constitution Check: PASS
+- [x] Post-Design Constitution Check: PASS
+- [x] All NEEDS CLARIFICATION resolved
+- [x] Complexity deviations documented (None - no constitutional violations)
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*

@@ -100,6 +100,12 @@ When creating this spec from a user prompt:
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
 
+### Constitutional Alignment
+- [ ] Performance requirements include specific metrics and benchmarks
+- [ ] User experience consistency requirements are measurable
+- [ ] Quality standards are testable (coverage, complexity, response times)
+- [ ] Test-first approach is implied in acceptance criteria
+
 ---
 
 ## Execution Status
