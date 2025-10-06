@@ -139,7 +139,7 @@
 - [ ] T065 [P] Real-time state management hooks in frontend/src/hooks/useRealtime.ts
 
 ### Frontend Integration
-- [ ] T066 Event join flow and routing in frontend/src/App.tsx
+- [x] T066 Event join flow and routing in frontend/src/App.tsx
 - [ ] T067 Host authentication flow
 - [ ] T068 Real-time UI updates integration
 - [ ] T069 Error handling and loading states

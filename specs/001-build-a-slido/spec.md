@@ -7,6 +7,15 @@
 
 ---
 
+## Clarifications
+
+### Session 2025-10-06
+- Q: What is the maximum number of attendees expected to participate simultaneously in a single event? → A: Medium classes (50-200 attendees)
+- Q: How long should poll and question data be retained after an event ends? → A: Permanent (never automatically deleted)
+- Q: What is the expected frequency of poll creation during a live event? → A: High - 5-10 polls per session
+- Q: What level of moderation control should hosts have over the Q&A system? → A: Minimal - Auto-approve all questions, host can only hide inappropriate ones
+- Q: What authentication level do you prefer for attendees joining events? → A: Optional identity - Attendees can choose to provide a display name or remain anonymous
+
 ## ⚡ Quick Guidelines
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
@@ -49,35 +58,39 @@ An instructor wants to engage their course attendees through live polls and Q&A 
 
 **Attendee Access**
 - **FR-006**: System MUST allow attendees to join events using slug or short code
-- **FR-007**: System MUST support anonymous attendee participation
-- **FR-008**: System MUST allow attendees to optionally provide display names
+- **FR-007**: System MUST support anonymous attendee participation by default
+- **FR-008**: System MUST allow attendees to optionally provide display names without requiring registration
+- **FR-031**: System MUST preserve attendee choice between anonymous and named participation throughout the session
 
 **Polling Functionality**
-- **FR-009**: System MUST allow hosts to create single-choice polls with multiple options
+- **FR-009**: System MUST allow hosts to create single-choice polls with multiple options (supporting 5-10 polls per session)
 - **FR-010**: System MUST allow hosts to create multi-choice polls with multiple options
 - **FR-011**: System MUST allow hosts to open and close polls dynamically
-- **FR-012**: System MUST display live poll results showing vote counts and percentages
+- **FR-012**: System MUST display live poll results showing vote counts and percentages with efficient updates for high-frequency polling
 - **FR-013**: System MUST prevent attendees from voting on closed polls
 - **FR-014**: System MUST update poll results in real-time as votes are cast
+- **FR-029**: System MUST support rapid poll creation workflow for hosts managing 5-10 polls per session
 
 **Question & Answer System**
 - **FR-015**: System MUST allow attendees to submit text questions
-- **FR-016**: System MUST queue questions in pending state by default (moderated)
-- **FR-017**: System MUST allow hosts to approve or reject pending questions
-- **FR-018**: System MUST display approved questions to all attendees
+- **FR-016**: System MUST auto-approve and display questions immediately upon submission
+- **FR-017**: System MUST allow hosts to hide inappropriate questions after they are posted
+- **FR-018**: System MUST display all visible questions to attendees in real-time
 - **FR-019**: System MUST allow attendees to upvote questions
+- **FR-030**: System MUST provide minimal moderation interface focused on hiding rather than pre-approval
 - **FR-020**: System MUST reorder question queue by upvote count in real-time
 - **FR-021**: System MUST prevent duplicate voting by the same attendee on the same question
 
 **Real-time Updates**
-- **FR-022**: System MUST broadcast poll result updates to all connected attendees within 100ms
-- **FR-023**: System MUST broadcast question queue changes to all participants within 100ms
-- **FR-024**: System MUST maintain real-time connection state for all active participants
+- **FR-022**: System MUST broadcast poll result updates to all connected attendees within 100ms (supporting up to 200 concurrent attendees)
+- **FR-023**: System MUST broadcast question queue changes to all participants within 100ms (supporting up to 200 concurrent attendees)
+- **FR-024**: System MUST maintain real-time connection state for all active participants in medium-sized classes (50-200 attendees)
 
 **Data Persistence**
-- **FR-025**: System MUST persist all event data, polls, questions, and votes
+- **FR-025**: System MUST persist all event data, polls, questions, and votes permanently with no automatic deletion policies
 - **FR-026**: System MUST maintain data integrity during concurrent operations
 - **FR-027**: System MUST support session recovery for hosts and attendees after connection loss
+- **FR-028**: Users SHOULD have control over manual data deletion if needed
 
 ### Key Entities *(include if feature involves data)*
 
