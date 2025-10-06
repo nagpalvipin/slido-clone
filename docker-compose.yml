@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./slido_clone.db
+      - DEBUG=true
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+
+  db:
+    image: alpine:latest
+    command: ["sh", "-c", "mkdir -p /data && touch /data/.gitkeep && tail -f /dev/null"]
+    volumes:
+      - backend_data:/data
+
+volumes:
+  backend_data:

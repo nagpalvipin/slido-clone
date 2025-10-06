@@ -41,33 +41,33 @@
 - Paths shown below follow plan.md structure
 
 ## Phase 3.1: Setup
-- [ ] T001 Create backend project structure with backend/src/{models,api,services,core}/ directories
-- [ ] T002 Create frontend project structure with frontend/src/{components,pages,hooks,services}/ directories  
-- [ ] T003 Initialize Python backend with FastAPI, SQLAlchemy, Alembic, pytest in backend/requirements.txt
-- [ ] T004 Initialize React frontend with Tailwind CSS, WebSocket client in frontend/package.json
-- [ ] T005 [P] Configure backend linting with ruff, mypy in backend/pyproject.toml
-- [ ] T006 [P] Configure frontend linting with ESLint, Prettier in frontend/.eslintrc.json
-- [ ] T007 Create Docker Compose setup with backend/Dockerfile, frontend/Dockerfile, docker-compose.yml
-- [ ] T008 [P] Setup Alembic configuration in backend/alembic.ini and backend/alembic/env.py
+- [x] T001 Create backend project structure with backend/src/{models,api,services,core}/ directories
+- [x] T002 Create frontend project structure with frontend/src/{components,pages,hooks,services}/ directories  
+- [x] T003 Initialize Python backend with FastAPI, SQLAlchemy, Alembic, pytest in backend/requirements.txt
+- [x] T004 Initialize React frontend with Tailwind CSS, WebSocket client in frontend/package.json
+- [x] T005 [P] Configure backend linting with ruff, mypy in backend/pyproject.toml
+- [x] T006 [P] Configure frontend linting with ESLint, Prettier in frontend/.eslintrc.json
+- [x] T007 Create Docker Compose setup with backend/Dockerfile, frontend/Dockerfile, docker-compose.yml
+- [x] T008 [P] Setup Alembic configuration in backend/alembic.ini and backend/alembic/env.py
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests (API Endpoints)
-- [ ] T009 [P] Contract test POST /api/v1/events in backend/tests/contract/test_events_post.py
-- [ ] T010 [P] Contract test GET /api/v1/events/{slug} in backend/tests/contract/test_events_get.py
-- [ ] T011 [P] Contract test GET /api/v1/events/{slug}/host in backend/tests/contract/test_events_host.py
-- [ ] T012 [P] Contract test POST /api/v1/events/{event_id}/polls in backend/tests/contract/test_polls_post.py
-- [ ] T013 [P] Contract test PUT /api/v1/events/{event_id}/polls/{poll_id}/status in backend/tests/contract/test_polls_status.py
-- [ ] T014 [P] Contract test POST /api/v1/events/{event_id}/polls/{poll_id}/vote in backend/tests/contract/test_polls_vote.py
+- [x] T009 [P] Contract test POST /api/v1/events in backend/tests/contract/test_events_post.py
+- [x] T010 [P] Contract test GET /api/v1/events/{slug} in backend/tests/contract/test_events_get.py
+- [x] T011 [P] Contract test GET /api/v1/events/{slug}/host in backend/tests/contract/test_events_host.py
+- [x] T012 [P] Contract test POST /api/v1/events/{event_id}/polls in backend/tests/contract/test_polls_post.py
+- [x] T013 [P] Contract test PUT /api/v1/events/{event_id}/polls/{poll_id}/status in backend/tests/contract/test_polls_status.py
+- [x] T014 [P] Contract test POST /api/v1/events/{event_id}/polls/{poll_id}/vote in backend/tests/contract/test_polls_vote.py
 - [ ] T015 [P] Contract test POST /api/v1/events/{event_id}/questions in backend/tests/contract/test_questions_post.py
 - [ ] T016 [P] Contract test POST /api/v1/events/{event_id}/questions/{question_id}/upvote in backend/tests/contract/test_questions_upvote.py
 - [ ] T017 [P] Contract test PUT /api/v1/events/{event_id}/questions/{question_id}/status in backend/tests/contract/test_questions_moderate.py
-- [ ] T018 [P] WebSocket contract test for real-time poll updates in backend/tests/contract/test_websocket_polls.py
+- [x] T018 [P] WebSocket contract test for real-time poll updates in backend/tests/contract/test_websocket_polls.py
 - [ ] T019 [P] WebSocket contract test for real-time question updates in backend/tests/contract/test_websocket_questions.py
 
 ### Integration Tests (User Workflows)
-- [ ] T020 [P] Integration test complete host workflow in backend/tests/integration/test_host_workflow.py
+- [x] T020 [P] Integration test complete host workflow in backend/tests/integration/test_host_workflow.py
 - [ ] T021 [P] Integration test attendee participation flow in backend/tests/integration/test_attendee_workflow.py
 - [ ] T022 [P] Integration test Q&A moderation workflow in backend/tests/integration/test_qa_moderation.py
 - [ ] T023 [P] Integration test real-time synchronization in backend/tests/integration/test_realtime_sync.py
@@ -75,32 +75,32 @@
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
 ### Database Models
-- [ ] T024 [P] Event model in backend/src/models/event.py
-- [ ] T025 [P] Poll model in backend/src/models/poll.py  
-- [ ] T026 [P] PollOption model in backend/src/models/poll_option.py
-- [ ] T027 [P] PollResponse model in backend/src/models/poll_response.py
-- [ ] T028 [P] Question model in backend/src/models/question.py
+- [x] T024 [P] Event model in backend/src/models/event.py
+- [x] T025 [P] Poll model in backend/src/models/poll.py  
+- [x] T026 [P] PollOption model in backend/src/models/poll_option.py
+- [x] T027 [P] PollResponse model in backend/src/models/poll_response.py
+- [x] T028 [P] Question model in backend/src/models/question.py
 - [ ] T029 [P] QuestionVote model in backend/src/models/question_vote.py
-- [ ] T030 [P] Attendee model in backend/src/models/attendee.py
-- [ ] T031 Database models __init__.py imports in backend/src/models/__init__.py
+- [x] T030 [P] Attendee model in backend/src/models/attendee.py
+- [x] T031 Database models __init__.py imports in backend/src/models/__init__.py
 
 ### Business Services  
-- [ ] T032 [P] EventService CRUD operations in backend/src/services/event_service.py
-- [ ] T033 [P] PollService with voting logic in backend/src/services/poll_service.py
-- [ ] T034 [P] QuestionService with moderation logic in backend/src/services/question_service.py
-- [ ] T035 Services __init__.py imports in backend/src/services/__init__.py
+- [x] T032 [P] EventService CRUD operations in backend/src/services/event_service.py
+- [x] T033 [P] PollService with voting logic in backend/src/services/poll_service.py
+- [x] T034 [P] QuestionService with moderation logic in backend/src/services/question_service.py
+- [x] T035 Services __init__.py imports in backend/src/services/__init__.py
 
 ### Core Configuration
-- [ ] T036 [P] Database configuration in backend/src/core/database.py
-- [ ] T037 [P] Application config in backend/src/core/config.py
-- [ ] T038 [P] Security utilities in backend/src/core/security.py
+- [x] T036 [P] Database configuration in backend/src/core/database.py
+- [x] T037 [P] Application config in backend/src/core/config.py
+- [x] T038 [P] Security utilities in backend/src/core/security.py
 
 ### API Endpoints
-- [ ] T039 Events API router in backend/src/api/events.py (depends on EventService)
+- [x] T039 Events API router in backend/src/api/events.py (depends on EventService)
 - [ ] T040 Polls API router in backend/src/api/polls.py (depends on PollService)  
 - [ ] T041 Questions API router in backend/src/api/questions.py (depends on QuestionService)
 - [ ] T042 WebSocket handler in backend/src/api/websocket.py (depends on all services)
-- [ ] T043 FastAPI main application in backend/src/main.py (depends on all routers)
+- [x] T043 FastAPI main application in backend/src/main.py (depends on all routers)
 
 ## Phase 3.4: Integration
 
@@ -139,7 +139,7 @@
 - [ ] T065 [P] Real-time state management hooks in frontend/src/hooks/useRealtime.ts
 
 ### Frontend Integration
-- [ ] T066 Event join flow and routing in frontend/src/App.tsx
+- [x] T066 Event join flow and routing in frontend/src/App.tsx
 - [ ] T067 Host authentication flow
 - [ ] T068 Real-time UI updates integration
 - [ ] T069 Error handling and loading states
