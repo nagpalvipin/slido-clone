@@ -41,14 +41,14 @@
 - Paths shown below follow plan.md structure
 
 ## Phase 3.1: Setup
-- [ ] T001 Create backend project structure with backend/src/{models,api,services,core}/ directories
-- [ ] T002 Create frontend project structure with frontend/src/{components,pages,hooks,services}/ directories  
-- [ ] T003 Initialize Python backend with FastAPI, SQLAlchemy, Alembic, pytest in backend/requirements.txt
-- [ ] T004 Initialize React frontend with Tailwind CSS, WebSocket client in frontend/package.json
-- [ ] T005 [P] Configure backend linting with ruff, mypy in backend/pyproject.toml
-- [ ] T006 [P] Configure frontend linting with ESLint, Prettier in frontend/.eslintrc.json
-- [ ] T007 Create Docker Compose setup with backend/Dockerfile, frontend/Dockerfile, docker-compose.yml
-- [ ] T008 [P] Setup Alembic configuration in backend/alembic.ini and backend/alembic/env.py
+- [x] T001 Create backend project structure with backend/src/{models,api,services,core}/ directories
+- [x] T002 Create frontend project structure with frontend/src/{components,pages,hooks,services}/ directories  
+- [x] T003 Initialize Python backend with FastAPI, SQLAlchemy, Alembic, pytest in backend/requirements.txt
+- [x] T004 Initialize React frontend with Tailwind CSS, WebSocket client in frontend/package.json
+- [x] T005 [P] Configure backend linting with ruff, mypy in backend/pyproject.toml
+- [x] T006 [P] Configure frontend linting with ESLint, Prettier in frontend/.eslintrc.json
+- [x] T007 Create Docker Compose setup with backend/Dockerfile, frontend/Dockerfile, docker-compose.yml
+- [x] T008 [P] Setup Alembic configuration in backend/alembic.ini and backend/alembic/env.py
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
