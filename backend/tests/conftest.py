@@ -4,12 +4,13 @@ Test configuration and fixtures.
 Provides isolated test database and fixtures for all tests.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
+
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
 
 from src.core.database import Base, get_db
 from src.main import app
@@ -21,20 +22,20 @@ def test_db():
     # Create temporary database file
     db_fd, db_path = tempfile.mkstemp(suffix='.db')
     os.close(db_fd)
-    
+
     # Create test database engine
     test_database_url = f"sqlite:///{db_path}"
     test_engine = create_engine(
         test_database_url,
         connect_args={"check_same_thread": False}
     )
-    
+
     # Create all tables
     Base.metadata.create_all(bind=test_engine)
-    
+
     # Create session factory
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-    
+
     def override_get_db():
         """Override database dependency for testing."""
         try:
@@ -42,12 +43,12 @@ def test_db():
             yield db
         finally:
             db.close()
-    
+
     # Override the dependency
     app.dependency_overrides[get_db] = override_get_db
-    
+
     yield TestingSessionLocal()
-    
+
     # Cleanup
     app.dependency_overrides.clear()
     os.unlink(db_path)

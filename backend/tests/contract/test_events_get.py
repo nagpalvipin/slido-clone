@@ -6,7 +6,6 @@ Tests verify the events retrieval API contract against spec.
 """
 
 import pytest
-from fastapi.testclient import TestClient
 
 
 class TestEventsGetContract:
@@ -25,7 +24,7 @@ class TestEventsGetContract:
 
         # Then: Event details are returned
         assert response.status_code == 200
-        
+
         # Verify response structure matches contract (attendee view)
         data = response.json()
         assert data["id"] == sample_event["id"]
@@ -33,7 +32,7 @@ class TestEventsGetContract:
         assert data["slug"] == sample_event["slug"]
         assert data["description"] == sample_event["description"]
         assert data["is_active"] is True
-        
+
         # Verify attendee view excludes sensitive fields
         assert "host_code" not in data
         assert "short_code" not in data  # Available in host view only
@@ -53,7 +52,7 @@ class TestEventsGetContract:
         # For now, just test that is_active field is properly returned
         response = client.get(f"/api/v1/events/{sample_event['slug']}")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "is_active" in data
         assert isinstance(data["is_active"], bool)

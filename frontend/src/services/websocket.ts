@@ -12,6 +12,8 @@ export type WebSocketEventType =
   | 'vote_updated' 
   | 'question_created' 
   | 'question_updated'
+  | 'question_submitted'
+  | 'question_upvoted'
   | 'error';
 
 export interface WebSocketMessage {

@@ -1,12 +1,10 @@
 """Initial schema
 
 Revision ID: 9372cec8298d
-Revises: 
+Revises:
 Create Date: 2025-10-06 14:08:38.488763
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.

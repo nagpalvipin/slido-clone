@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEventState, usePollsState, useQuestionsState } from '../hooks/useRealTime';
 import { api } from '../services/api';
+import { EventSwitcher } from './EventSwitcher';
 
 export interface HostDashboardProps {
   eventSlug?: string;
@@ -21,22 +22,57 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
 
   const [activeTab, setActiveTab] = useState<'polls' | 'questions'>('polls');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [hostEventData, setHostEventData] = useState<any>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Real-time state hooks
+  // Set authentication BEFORE any API calls
+  useEffect(() => {
+    const hostCode = localStorage.getItem('hostCode');
+    if (hostCode) {
+      api.auth.setHostCode(hostCode);
+    }
+  }, []); // Run once on mount
+
+  // Authentication check and redirect
+  useEffect(() => {
+    const hostCode = localStorage.getItem('hostCode');
+    if (!hostCode && eventSlug) {
+      navigate(`/host/${eventSlug}/auth`);
+    }
+  }, [eventSlug, navigate]);
+
+  // Real-time state hooks - only connect if we have a valid eventSlug
   const { event, isLoading: eventLoading, error: eventError, connected } = useEventState(eventSlug || '');
   const { polls, isLoading: pollsLoading, error: pollsError } = usePollsState(eventSlug || '');
   const { questions, isLoading: questionsLoading, error: questionsError } = useQuestionsState(eventSlug || '');
 
-  // Authentication check
+  // Fetch host event data (includes short_code and other host-specific info)
   useEffect(() => {
-    const hostCode = localStorage.getItem('hostCode');
-    if (!hostCode && eventSlug) {
-      // Redirect to authentication
-      navigate(`/host/${eventSlug}/auth`);
-    } else if (hostCode) {
-      api.auth.setHostCode(hostCode);
+    const fetchHostData = async () => {
+      const hostCode = localStorage.getItem('hostCode');
+      if (!eventSlug || !hostCode) return;
+      
+      try {
+        const hostData = await api.events.getHostView(eventSlug, hostCode);
+        setHostEventData(hostData);
+      } catch (error) {
+        console.error('Failed to fetch host event data:', error);
+      }
+    };
+    
+    fetchHostData();
+  }, [eventSlug]);
+
+  // Copy to clipboard with visual feedback
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
     }
-  }, [eventSlug, navigate]);
+  };
 
   if (!eventSlug) {
     return (
@@ -90,23 +126,117 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
 
   const activePollsCount = polls.filter(poll => poll.status === 'active').length;
   const totalQuestionsCount = questions.length;
-  const pendingQuestionsCount = questions.filter(q => q.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {copiedField && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">
+              {copiedField === 'host_code' && 'Host code copied to clipboard!'}
+              {copiedField === 'short_code' && 'Attendee code copied to clipboard!'}
+              {copiedField === 'event_url' && 'Event URL copied to clipboard!'}
+              {copiedField === 'share_message' && 'Share message copied to clipboard!'}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Event Info */}
-            <div className="flex items-center">
+            {/* Event Info with Switcher */}
+            <div className="flex items-center space-x-4">
+              {/* Event Switcher Dropdown */}
+              {hostEventData?.host_code && (
+                <EventSwitcher
+                  currentEventId={event.id}
+                  hostCode={hostEventData.host_code}
+                  className="mr-4"
+                />
+              )}
               <div className="flex-shrink-0">
                 <h1 className="text-xl font-semibold text-gray-900">{event.title}</h1>
+                <p className="text-xs text-gray-500 mt-0.5">Event: {event.slug}</p>
               </div>
               <div className="ml-6 flex items-center space-x-4">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {event.slug}
-                </span>
+                {/* Host Code - Most Important for Authentication */}
+                <div className="flex items-center">
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg px-4 py-2">
+                    <div className="flex items-center space-x-3">
+                      <div>
+                        <div className="flex items-center space-x-1">
+                          <svg className="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span className="text-xs font-medium text-purple-700">Host Code</span>
+                        </div>
+                        <div className="text-sm font-mono font-bold text-purple-900 mt-0.5">
+                          {hostEventData?.host_code || 'Loading...'}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(hostEventData?.host_code || '', 'host_code')}
+                        className="flex items-center justify-center p-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                        title="Copy host code"
+                        disabled={!hostEventData?.host_code}
+                      >
+                        {copiedField === 'host_code' ? (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-purple-600 mt-1">Keep this private - required to access this dashboard</p>
+                  </div>
+                </div>
+                
+                {/* Attendee Event Codes for Sharing */}
+                <div className="flex items-center space-x-2">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs text-gray-500 mb-1">Attendee Code</span>
+                    <button 
+                      onClick={() => copyToClipboard(hostEventData?.short_code || event?.slug || '', 'short_code')}
+                      className="inline-flex items-center px-3 py-1 rounded-md text-sm font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
+                      title="Click to copy attendee code"
+                    >
+                      {copiedField === 'short_code' ? (
+                        <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : null}
+                      {hostEventData?.short_code || event?.slug || 'Loading...'}
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs text-gray-500 mb-1">Event URL</span>
+                    <button
+                      onClick={() => {
+                        const fullUrl = `${window.location.origin}/events/${event?.slug || ''}`;
+                        copyToClipboard(fullUrl, 'event_url');
+                      }}
+                      className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer transition-colors"
+                      title="Click to copy attendee URL"
+                    >
+                      {copiedField === 'event_url' ? (
+                        <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : null}
+                      {event?.slug || 'Loading...'}
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center">
                   <div className={`h-2 w-2 rounded-full mr-2 ${connected ? 'bg-green-400' : 'bg-red-400'}`}></div>
                   <span className="text-sm text-gray-500">
@@ -126,16 +256,38 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
                 <div className="text-lg font-semibold text-gray-900">{totalQuestionsCount}</div>
                 <div className="text-xs text-gray-500">Questions</div>
               </div>
-              {pendingQuestionsCount > 0 && (
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-amber-600">{pendingQuestionsCount}</div>
-                  <div className="text-xs text-amber-600">Pending</div>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Sharing Instructions */}
+      <div className="bg-blue-50 border-b border-blue-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-blue-800">
+                <strong>Share with attendees:</strong> Give them the Attendee Code <code className="bg-blue-200 px-1 rounded">{hostEventData?.short_code || 'Loading...'}</code> or direct them to <code className="bg-blue-200 px-1 rounded">{window.location.origin}/events/{event?.slug}</code>
+                <span className="ml-2 text-purple-700 font-medium">⚠️ Do NOT share your Host Code (purple box above) - it's private!</span>
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  const message = `Join my live event!\n\nAttendee Code: ${hostEventData?.short_code || event?.slug}\nOr visit: ${window.location.origin}/events/${event?.slug}`;
+                  copyToClipboard(message, 'share_message');
+                }}
+                className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Copy Invite Message
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Navigation Tabs */}
       <nav className="bg-white shadow-sm">
@@ -165,11 +317,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
               }`}
             >
               Questions
-              {pendingQuestionsCount > 0 && (
-                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                  {pendingQuestionsCount}
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -302,16 +449,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
                   <div className="sm:flex-auto">
                     <h2 className="text-lg font-medium text-gray-900">Question Management</h2>
                     <p className="mt-2 text-sm text-gray-700">
-                      Review and moderate questions from attendees. Approved questions will be visible to all participants.
+                      All questions from attendees are visible to all participants.
                     </p>
                   </div>
-                  {pendingQuestionsCount > 0 && (
-                    <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                      <span className="inline-flex items-center rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800">
-                        {pendingQuestionsCount} pending review
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -348,29 +488,18 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {questions.map((question) => (
+                  {questions
+                    .sort((a, b) => b.upvote_count - a.upvote_count) // Sort by upvotes descending
+                    .map((question) => (
                     <div
                       key={question.id}
-                      className={`bg-white overflow-hidden shadow rounded-lg ${
-                        question.status === 'pending' ? 'ring-2 ring-amber-200' : ''
-                      }`}
+                      className="bg-white overflow-hidden shadow rounded-lg"
                     >
                       <div className="px-4 py-5 sm:p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="text-lg text-gray-900">{question.question_text}</p>
                             <div className="mt-2 flex items-center space-x-2">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  question.status === 'approved'
-                                    ? 'bg-green-100 text-green-800'
-                                    : question.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}
-                              >
-                                {question.status}
-                              </span>
                               <span className="text-sm text-gray-500">
                                 {question.upvote_count} upvotes
                               </span>
@@ -379,16 +508,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ eventSlug: propEve
                               </span>
                             </div>
                           </div>
-                          {question.status === 'pending' && (
-                            <div className="flex-shrink-0 flex space-x-2">
-                              <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                                Approve
-                              </button>
-                              <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
-                                Reject
-                              </button>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

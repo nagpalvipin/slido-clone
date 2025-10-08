@@ -7,6 +7,7 @@ Tests verify the polls creation API contract against spec.
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 
@@ -56,7 +57,7 @@ class TestPollsPostContract:
 
         # Then: Poll is created successfully
         assert response.status_code == 201
-        
+
         # Verify response structure matches contract
         data = response.json()
         assert "id" in data
@@ -64,12 +65,12 @@ class TestPollsPostContract:
         assert data["poll_type"] == "single"
         assert data["status"] == "draft"
         assert "created_at" in data
-        
+
         # Verify options structure
         assert "options" in data
         options = data["options"]
         assert len(options) == 4
-        
+
         for i, option in enumerate(options):
             assert "id" in option
             assert option["position"] == i
@@ -117,7 +118,7 @@ class TestPollsPostContract:
 
         # Then: Unauthorized error is returned
         assert response.status_code == 401
-    
+
     def test_create_poll_malformed_host_code(self, client, sample_event):
         """Test poll creation with malformed host code."""
         poll_data = {

@@ -5,10 +5,10 @@ These tests MUST FAIL initially to enforce TDD approach.
 Tests verify WebSocket real-time functionality for polls.
 """
 
+
 import pytest
-import asyncio
-import json
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 
@@ -44,7 +44,7 @@ class TestWebSocketPollsContract:
                 "type": "join",
                 "event_id": sample_event["id"]
             })
-            
+
             # Should receive confirmation
             data = websocket.receive_json()
             assert data["type"] == "connected"
@@ -70,7 +70,7 @@ class TestWebSocketPollsContract:
                 ]
             }
             headers = {"Authorization": f"Host {sample_event['host_code']}"}
-            
+
             # Create poll via REST API
             response = client.post(
                 f"/api/v1/events/{sample_event['id']}/polls",
@@ -90,11 +90,11 @@ class TestWebSocketPollsContract:
         # Given: Event with an existing poll
         poll_data = {
             "question_text": "Status update test",
-            "poll_type": "single", 
+            "poll_type": "single",
             "options": [{"option_text": "Test Option", "position": 0}]
         }
         headers = {"Authorization": f"Host {sample_event['host_code']}"}
-        
+
         poll_response = client.post(
             f"/api/v1/events/{sample_event['id']}/polls",
             json=poll_data,
@@ -125,7 +125,7 @@ class TestWebSocketPollsContract:
     def test_websocket_vote_update_broadcast(self, client, sample_event):
         """Test that vote updates are broadcast in real-time (<100ms requirement)."""
         import time
-        
+
         # Given: Active poll
         poll_data = {
             "question_text": "Vote broadcast test",
@@ -136,7 +136,7 @@ class TestWebSocketPollsContract:
             ]
         }
         headers = {"Authorization": f"Host {sample_event['host_code']}"}
-        
+
         poll_response = client.post(
             f"/api/v1/events/{sample_event['id']}/polls",
             json=poll_data,
@@ -157,7 +157,7 @@ class TestWebSocketPollsContract:
         with client.websocket_connect(f"/ws/events/{sample_event['slug']}") as websocket:
             websocket.send_json({"type": "join", "event_id": sample_event["id"]})
             websocket.receive_json()  # Join confirmation
-            
+
             # Clear any existing messages
             try:
                 while True:
@@ -167,7 +167,7 @@ class TestWebSocketPollsContract:
 
             # When: Attendee votes on the poll
             start_time = time.time()
-            
+
             vote_response = client.post(
                 f"/api/v1/events/{sample_event['id']}/polls/{poll_id}/vote",
                 json={"option_id": option_id}
@@ -177,10 +177,10 @@ class TestWebSocketPollsContract:
             # Then: Vote update is broadcast within 100ms (constitutional requirement)
             message = websocket.receive_json()
             end_time = time.time()
-            
+
             broadcast_time_ms = (end_time - start_time) * 1000
             assert broadcast_time_ms < 100  # Constitutional <100ms requirement
-            
+
             assert message["type"] == "vote_updated"
             assert message["poll_id"] == poll_id
             assert "results" in message
@@ -200,7 +200,7 @@ class TestWebSocketPollsContract:
                 # Join both clients
                 ws1.send_json({"type": "join", "event_id": sample_event["id"]})
                 ws2.send_json({"type": "join", "event_id": sample_event["id"]})
-                
+
                 ws1.receive_json()  # Join confirmation
                 ws2.receive_json()  # Join confirmation
 
@@ -211,7 +211,7 @@ class TestWebSocketPollsContract:
                     "options": [{"option_text": "Test", "position": 0}]
                 }
                 headers = {"Authorization": f"Host {sample_event['host_code']}"}
-                
+
                 response = client.post(
                     f"/api/v1/events/{sample_event['id']}/polls",
                     json=poll_data,
@@ -222,7 +222,7 @@ class TestWebSocketPollsContract:
                 # Then: Both clients receive the update
                 msg1 = ws1.receive_json()
                 msg2 = ws2.receive_json()
-                
+
                 assert msg1["type"] == "poll_created"
                 assert msg2["type"] == "poll_created"
                 assert msg1["poll"]["question_text"] == "Multi-client test"

@@ -148,9 +148,12 @@ export function useEventState(eventSlug: string): UseEventStateResult {
 
   // Connect to WebSocket and load initial data
   useEffect(() => {
-    if (eventSlug) {
+    if (eventSlug && eventSlug.trim()) {
+      console.log('[useEventState] Connecting with eventSlug:', eventSlug);
       loadEvent();
       connect(eventSlug);
+    } else if (!eventSlug || !eventSlug.trim()) {
+      console.log('[useEventState] Skipping connection, invalid eventSlug:', eventSlug);
     }
   }, [eventSlug, loadEvent, connect]);
 
@@ -203,34 +206,42 @@ export function usePollsState(eventSlug: string): UsePollsStateResult {
     wsRef.current = ws;
 
     // Handle poll creation
-    const unsubscribeCreated = ws.on('poll_created', (message: WebSocketMessage) => {
-      if (message.data?.poll) {
-        setPolls((currentPolls: Poll[]) => [...currentPolls, message.data.poll]);
+    const unsubscribeCreated = ws.on('poll_created', (message: any) => {
+      // Backend sends: { type: "poll_created", poll: {...}, timestamp: ... }
+      const pollData = message.poll || message.data?.poll;
+      if (pollData) {
+        setPolls((currentPolls: Poll[]) => [...currentPolls, pollData]);
       }
     });
 
     // Handle poll updates
-    const unsubscribeUpdated = ws.on('poll_updated', (message: WebSocketMessage) => {
-      if (message.data?.poll) {
+    const unsubscribeUpdated = ws.on('poll_updated', (message: any) => {
+      // Backend sends: { type: "poll_updated", poll: {...}, timestamp: ... }
+      const pollData = message.poll || message.data?.poll;
+      if (pollData) {
         setPolls((currentPolls: Poll[]) =>
           currentPolls.map((poll: Poll) =>
-            poll.id === message.data.poll.id ? message.data.poll : poll
+            poll.id === pollData.id ? pollData : poll
           )
         );
       }
     });
 
     // Handle vote updates
-    const unsubscribeVotes = ws.on('vote_updated', (message: WebSocketMessage) => {
-      if (message.data?.poll_id && message.data?.results) {
+    const unsubscribeVotes = ws.on('vote_updated', (message: any) => {
+      // Backend sends: { type: "vote_updated", poll_id: X, results: {...}, timestamp: ... }
+      const pollId = message.poll_id || message.data?.poll_id;
+      const results = message.results || message.data?.results;
+      
+      if (pollId !== undefined && results) {
         setPolls((currentPolls: Poll[]) =>
           currentPolls.map((poll: Poll) => {
-            if (poll.id === message.data.poll_id) {
+            if (poll.id === pollId) {
               return {
                 ...poll,
                 options: poll.options.map((option: any) => ({
                   ...option,
-                  vote_count: message.data.results[option.id] || 0
+                  vote_count: results[option.id] || 0
                 }))
               };
             }
@@ -250,9 +261,12 @@ export function usePollsState(eventSlug: string): UsePollsStateResult {
 
   // Connect and load initial data
   useEffect(() => {
-    if (eventSlug) {
+    if (eventSlug && eventSlug.trim()) {
+      console.log('[usePollsState] Connecting with eventSlug:', eventSlug);
       loadPolls();
       connect(eventSlug);
+    } else if (!eventSlug || !eventSlug.trim()) {
+      console.log('[usePollsState] Skipping connection, invalid eventSlug:', eventSlug);
     }
   }, [eventSlug, loadPolls, connect]);
 
@@ -286,7 +300,19 @@ export function useQuestionsState(eventSlug: string): UseQuestionsStateResult {
     try {
       setIsLoading(true);
       setError(null);
-      const questionsData = await api.questions.getByEvent(eventSlug);
+      
+      // Check if we're in a host context (has host code) or attendee context
+      const hostCode = localStorage.getItem('hostCode');
+      
+      let questionsData: Question[];
+      if (hostCode) {
+        // Host view: get all questions (requires auth)
+        questionsData = await api.questions.getByEvent(eventSlug);
+      } else {
+        // Attendee view: get all questions (public, no filtering needed)
+        questionsData = await api.questions.getPublicBySlug(eventSlug);
+      }
+      
       setQuestions(questionsData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load questions';
@@ -304,36 +330,60 @@ export function useQuestionsState(eventSlug: string): UseQuestionsStateResult {
     const ws = createWebSocketService(eventSlug);
     wsRef.current = ws;
 
-    // Handle question creation
-    const unsubscribeCreated = ws.on('question_created', (message: WebSocketMessage) => {
-      if (message.data?.question) {
-        setQuestions((currentQuestions: Question[]) => [...currentQuestions, message.data.question]);
+    // Handle question submission (creation or moderation)
+    const unsubscribeSubmitted = ws.on('question_submitted', (message: any) => {
+      // Backend sends: { type: "question_submitted", question: {...}, timestamp: ... }
+      const questionData = message.question || message.data?.question;
+      if (questionData) {
+        console.log('[useQuestionsState] Received question_submitted:', questionData);
+        setQuestions((currentQuestions: Question[]) => {
+          const existingIndex = currentQuestions.findIndex(q => q.id === questionData.id);
+          if (existingIndex >= 0) {
+            // Update existing question
+            const updated = [...currentQuestions];
+            updated[existingIndex] = questionData;
+            return updated;
+          } else {
+            // Add new question
+            return [...currentQuestions, questionData];
+          }
+        });
       }
     });
 
-    // Handle question updates (moderation, votes)
-    const unsubscribeUpdated = ws.on('question_updated', (message: WebSocketMessage) => {
-      if (message.data?.question) {
+    // Handle question upvotes
+    const unsubscribeUpvoted = ws.on('question_upvoted', (message: any) => {
+      // Backend sends: { type: "question_upvoted", question_id: X, upvote_count: Y, timestamp: ... }
+      const questionId = message.question_id || message.data?.question_id;
+      const upvoteCount = message.upvote_count ?? message.data?.upvote_count;
+      
+      if (questionId !== undefined && upvoteCount !== undefined) {
+        console.log('[useQuestionsState] Received question_upvoted:', { questionId, upvoteCount });
         setQuestions((currentQuestions: Question[]) =>
           currentQuestions.map((question: Question) =>
-            question.id === message.data.question.id ? message.data.question : question
+            question.id === questionId 
+              ? { ...question, upvote_count: upvoteCount }
+              : question
           )
         );
       }
     });
 
     return () => {
-      unsubscribeCreated();
-      unsubscribeUpdated();
+      unsubscribeSubmitted();
+      unsubscribeUpvoted();
       ws.disconnect();
     };
   }, [connected, eventSlug]);
 
   // Connect and load initial data
   useEffect(() => {
-    if (eventSlug) {
+    if (eventSlug && eventSlug.trim()) {
+      console.log('[useQuestionsState] Connecting with eventSlug:', eventSlug);
       loadQuestions();
       connect(eventSlug);
+    } else if (!eventSlug || !eventSlug.trim()) {
+      console.log('[useQuestionsState] Skipping connection, invalid eventSlug:', eventSlug);
     }
   }, [eventSlug, loadQuestions, connect]);
 
