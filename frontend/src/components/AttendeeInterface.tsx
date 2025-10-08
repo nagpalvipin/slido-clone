@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useEventState, usePollsState, useQuestionsState } from '../hooks/useRealTime';
+import { api } from '../services/api';
 
 export interface AttendeeInterfaceProps {
   eventSlug?: string;
@@ -19,15 +20,36 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
 
   const [activeTab, setActiveTab] = useState<'polls' | 'questions'>('polls');
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [highlightedQuestions, setHighlightedQuestions] = useState<Set<number>>(new Set());
 
   // Real-time state hooks
   const { event, isLoading: eventLoading, error: eventError, connected } = useEventState(eventSlug || '');
   const { polls, isLoading: pollsLoading } = usePollsState(eventSlug || '');
   const { questions, isLoading: questionsLoading } = useQuestionsState(eventSlug || '');
 
-  // Filter active polls and approved questions for attendees
+  // Filter active polls for attendees (all questions are now public)
   const activePolls = polls.filter(poll => poll.status === 'active');
-  const approvedQuestions = questions.filter(question => question.status === 'approved');
+
+  // Detect new questions and trigger highlight animation
+  useEffect(() => {
+    const newQuestionIds = questions
+      .filter(q => {
+        // Check if question is less than 5 seconds old
+        const createdAt = new Date(q.created_at).getTime();
+        const now = Date.now();
+        return (now - createdAt) < 5000;
+      })
+      .map(q => q.id);
+
+    if (newQuestionIds.length > 0) {
+      setHighlightedQuestions(new Set(newQuestionIds));
+      
+      // Remove highlight after 2 seconds
+      setTimeout(() => {
+        setHighlightedQuestions(new Set());
+      }, 2000);
+    }
+  }, [questions]);
 
   if (!eventSlug) {
     return (
@@ -139,9 +161,9 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
               }`}
             >
               Q&A
-              {approvedQuestions.length > 0 && (
+              {questions.length > 0 && (
                 <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {approvedQuestions.length}
+                  {questions.length}
                 </span>
               )}
             </button>
@@ -264,19 +286,42 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
                 <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Submit a Question</h3>
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
-                      // Handle question submission
-                      setShowQuestionForm(false);
+                      const formData = new FormData(e.currentTarget);
+                      const questionText = formData.get('questionText') as string;
+                      
+                      if (!questionText?.trim() || !event) return;
+                      
+                      try {
+                        const newQuestion = await api.questions.create(event.id, {
+                          question_text: questionText.trim()
+                        });
+                        
+                        // Trigger highlight animation for the new question
+                        setHighlightedQuestions(new Set([newQuestion.id]));
+                        setTimeout(() => {
+                          setHighlightedQuestions(new Set());
+                        }, 2000);
+                        
+                        setShowQuestionForm(false);
+                        // The real-time hooks will automatically update the questions list
+                      } catch (error) {
+                        console.error('Failed to submit question:', error);
+                        // You could add error state here for user feedback
+                      }
                     }}
                   >
                     <div className="mb-4">
                       <textarea
+                        name="questionText"
                         className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         rows={3}
                         placeholder="Type your question here..."
+                        maxLength={500}
                         required
                       />
+                      <p className="mt-1 text-xs text-gray-500">Maximum 500 characters</p>
                     </div>
                     <div className="flex justify-end space-x-3">
                       <button
@@ -303,7 +348,7 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading questions...</p>
                 </div>
-              ) : approvedQuestions.length === 0 ? (
+              ) : questions.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
                   <svg
                     className="mx-auto h-12 w-12 text-gray-400"
@@ -326,12 +371,14 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {approvedQuestions
+                  {questions
                     .sort((a, b) => b.upvote_count - a.upvote_count) // Sort by upvotes
                     .map((question) => (
                       <div
                         key={question.id}
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                        className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all ${
+                          highlightedQuestions.has(question.id) ? 'question-highlight' : ''
+                        }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
@@ -347,7 +394,15 @@ export const AttendeeInterface: React.FC<AttendeeInterfaceProps> = ({ eventSlug:
                           <div className="flex-shrink-0 ml-4">
                             <button
                               className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                              // onClick={() => handleUpvote(question.id)}
+                              onClick={async () => {
+                                if (!event) return;
+                                try {
+                                  await api.questions.upvote(event.id, question.id);
+                                  // The real-time hooks will automatically update the question
+                                } catch (error) {
+                                  console.error('Failed to upvote question:', error);
+                                }
+                              }}
                             >
                               <svg
                                 className="w-4 h-4"

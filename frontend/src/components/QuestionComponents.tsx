@@ -158,7 +158,6 @@ export interface QuestionListProps {
   questions: Question[];
   eventId: number;
   allowUpvote?: boolean;
-  showStatus?: boolean;
   onUpvote?: (questionId: number) => void;
 }
 
@@ -166,7 +165,6 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   questions,
   eventId,
   allowUpvote = true,
-  showStatus = false,
   onUpvote
 }) => {
   const [upvotingQuestions, setUpvotingQuestions] = useState<Set<number>>(new Set());
@@ -231,29 +229,13 @@ export const QuestionList: React.FC<QuestionListProps> = ({
       {sortedQuestions.map((question) => (
         <div
           key={question.id}
-          className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${
-            showStatus && question.status === 'pending' ? 'ring-2 ring-amber-200' : ''
-          }`}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <p className="text-lg text-gray-900 mb-2">{question.question_text}</p>
               
               <div className="flex items-center space-x-3">
-                {showStatus && (
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      question.status === 'approved'
-                        ? 'bg-green-100 text-green-800'
-                        : question.status === 'rejected'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {question.status}
-                  </span>
-                )}
-                
                 <span className="text-sm text-gray-500">
                   {new Date(question.created_at).toLocaleString()}
                 </span>
@@ -265,7 +247,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
             </div>
             
             {/* Upvote Button */}
-            {allowUpvote && question.status === 'approved' && (
+            {allowUpvote && (
               <div className="flex-shrink-0 ml-4">
                 <button
                   onClick={() => handleUpvote(question.id)}
@@ -316,149 +298,27 @@ export const QuestionModeration: React.FC<QuestionModerationProps> = ({
 }) => {
   const [moderatingQuestions, setModeratingQuestions] = useState<Set<number>>(new Set());
 
-  // Handle moderation
+  // Note: Moderation has been removed from the system
+  // All questions are automatically public
   const handleModerate = async (questionId: number, status: 'approved' | 'rejected') => {
-    if (moderatingQuestions.has(questionId)) return;
-
-    try {
-      setModeratingQuestions(prev => new Set([...prev, questionId]));
-      await api.questions.moderate(eventId, questionId, status);
-      
-      if (onQuestionModerated) {
-        onQuestionModerated(questionId, status);
-      }
-    } catch (err) {
-      console.error('Failed to moderate question:', err);
-    } finally {
-      setModeratingQuestions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(questionId);
-        return newSet;
-      });
-    }
+    // This function is deprecated and does nothing
+    console.warn('Question moderation is no longer supported');
   };
-
-  // Filter questions by status
-  const pendingQuestions = questions.filter(q => q.status === 'pending');
-  const approvedQuestions = questions.filter(q => q.status === 'approved');
-  const rejectedQuestions = questions.filter(q => q.status === 'rejected');
 
   return (
     <div className="space-y-8">
-      {/* Pending Questions */}
-      {pendingQuestions.length > 0 && (
+      {/* All Questions */}
+      {questions.length > 0 && (
         <div>
-          <h3 className="text-lg font-medium text-amber-900 mb-4 flex items-center">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mr-3">
-              {pendingQuestions.length}
-            </span>
-            Pending Review
-          </h3>
-          
-          <div className="space-y-4">
-            {pendingQuestions.map((question) => (
-              <div
-                key={question.id}
-                className="bg-white rounded-lg shadow-sm border-2 border-amber-200 p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-lg text-gray-900 mb-2">{question.question_text}</p>
-                    
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm text-gray-500">
-                        {new Date(question.created_at).toLocaleString()}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {question.upvote_count} upvotes
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Moderation Actions */}
-                  <div className="flex-shrink-0 ml-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleModerate(question.id, 'approved')}
-                        disabled={moderatingQuestions.has(question.id)}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                      >
-                        {moderatingQuestions.has(question.id) ? 'Processing...' : 'Approve'}
-                      </button>
-                      <button
-                        onClick={() => handleModerate(question.id, 'rejected')}
-                        disabled={moderatingQuestions.has(question.id)}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        {moderatingQuestions.has(question.id) ? 'Processing...' : 'Reject'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Approved Questions */}
-      {approvedQuestions.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium text-green-900 mb-4 flex items-center">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-3">
-              {approvedQuestions.length}
-            </span>
-            Approved Questions
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            All Questions ({questions.length})
           </h3>
           
           <QuestionList 
-            questions={approvedQuestions} 
+            questions={questions} 
             eventId={eventId} 
             allowUpvote={false}
-            showStatus={false}
           />
-        </div>
-      )}
-
-      {/* Rejected Questions */}
-      {rejectedQuestions.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium text-red-900 mb-4 flex items-center">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mr-3">
-              {rejectedQuestions.length}
-            </span>
-            Rejected Questions
-          </h3>
-          
-          <QuestionList 
-            questions={rejectedQuestions} 
-            eventId={eventId} 
-            allowUpvote={false}
-            showStatus={false}
-          />
-        </div>
-      )}
-
-      {questions.length === 0 && (
-        <div className="text-center py-12">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No questions yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Questions submitted by attendees will appear here for moderation.
-          </p>
         </div>
       )}
     </div>

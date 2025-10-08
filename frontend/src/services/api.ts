@@ -17,6 +17,8 @@ export interface Event {
   description?: string;
   created_at: string;
   is_active: boolean;
+  host_code?: string;
+  question_count?: number;
 }
 
 export interface EventCreateResponse extends Event {
@@ -49,7 +51,6 @@ export interface PollOption {
 export interface Question {
   id: number;
   question_text: string;
-  status: 'pending' | 'approved' | 'rejected';
   upvote_count: number;
   created_at: string;
 }
@@ -64,6 +65,7 @@ export interface CreateEventRequest {
   title: string;
   slug: string;
   description?: string;
+  host_code?: string;
 }
 
 export interface CreatePollRequest {
@@ -211,6 +213,20 @@ export class ApiClient {
     });
   }
 
+  async getEventsByHost(
+    hostCode: string,
+    params?: { limit?: number; offset?: number }
+  ): Promise<{ events: Event[]; total: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    
+    const queryString = queryParams.toString();
+    const url = `/events/host/${hostCode}${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<{ events: Event[]; total: number }>(url);
+  }
+
   // Poll API methods
   async createPoll(eventId: number, pollData: CreatePollRequest): Promise<Poll> {
     return this.request<Poll>(`/events/${eventId}/polls`, {
@@ -254,17 +270,6 @@ export class ApiClient {
       method: 'POST',
     });
   }
-
-  async moderateQuestion(
-    eventId: number, 
-    questionId: number, 
-    status: 'approved' | 'rejected'
-  ): Promise<Question> {
-    return this.request<Question>(`/events/${eventId}/questions/${questionId}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status }),
-    });
-  }
 }
 
 // Default API client instance
@@ -276,6 +281,8 @@ export const api = {
     create: (data: CreateEventRequest) => apiClient.createEvent(data),
     get: (slug: string) => apiClient.getEvent(slug),
     getHostView: (slug: string, hostCode: string) => apiClient.getHostView(slug, hostCode),
+    getByHost: (hostCode: string, params?: { limit?: number; offset?: number }) => 
+      apiClient.getEventsByHost(hostCode, params),
   },
   polls: {
     create: (eventId: number, data: CreatePollRequest) => apiClient.createPoll(eventId, data),
@@ -284,26 +291,41 @@ export const api = {
     vote: (eventId: number, pollId: number, vote: VoteRequest) => 
       apiClient.voteOnPoll(eventId, pollId, vote),
     getByEvent: async (eventSlug: string): Promise<Poll[]> => {
+      const hostCode = apiClient.getHostCode();
+      
+      // Only try to get polls if we have a host code
+      if (!hostCode) {
+        console.warn('No host code available, cannot fetch polls');
+        return [];
+      }
+
       // Get polls from host view (includes polls data)
-      const hostView = await apiClient.getHostView(eventSlug, apiClient.getHostCode() || 'default');
+      const hostView = await apiClient.getHostView(eventSlug, hostCode);
       return hostView.polls;
     },
   },
   questions: {
     create: (eventId: number, data: CreateQuestionRequest) => apiClient.createQuestion(eventId, data),
     upvote: (eventId: number, questionId: number) => apiClient.upvoteQuestion(eventId, questionId),
-    moderate: (eventId: number, questionId: number, status: 'approved' | 'rejected') => 
-      apiClient.moderateQuestion(eventId, questionId, status),
+    
+    // Get all questions for attendees (public, no auth required)
+    getPublicBySlug: async (eventSlug: string): Promise<Question[]> => {
+      return apiClient.get<Question[]>(`/events/slug/${eventSlug}/questions/public`);
+    },
+    
+    // Get all questions for hosts (requires auth)
     getByEvent: async (eventSlug: string): Promise<Question[]> => {
-      // Get questions from host view (includes questions data)
-      try {
-        const hostView = await apiClient.getHostView(eventSlug, apiClient.getHostCode() || 'default');
-        return hostView.questions;
-      } catch (error) {
-        // Fallback: try to get event first to get ID, then get questions
-        const event = await apiClient.getEvent(eventSlug);
-        return await apiClient.get<Question[]>(`/api/v1/events/${event.id}/questions`);
+      const hostCode = apiClient.getHostCode();
+      
+      // Only try to get questions if we have a host code
+      if (!hostCode) {
+        console.warn('No host code available, cannot fetch questions');
+        return [];
       }
+
+      // Get questions from host view (includes questions data)
+      const hostView = await apiClient.getHostView(eventSlug, hostCode);
+      return hostView.questions;
     },
   },
   auth: {

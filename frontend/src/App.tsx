@@ -178,8 +178,10 @@ const EventCreation: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
-    description: ''
+    description: '',
+    hostCode: ''
   });
+  const [useCustomHostCode, setUseCustomHostCode] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -204,6 +206,22 @@ const EventCreation: React.FC = () => {
     }));
   };
 
+  // Validate custom host code format (simplified)
+  const validateHostCode = (code: string): boolean => {
+    // Must be 3-30 characters: alphanumeric, hyphens, underscores
+    // Backend will auto-prefix with 'host_' if not present
+    const cleaned = code.trim();
+    if (!cleaned) return false;
+    
+    // Remove 'host_' prefix if present for validation
+    const codeToValidate = cleaned.toLowerCase().startsWith('host_') 
+      ? cleaned.slice(5) 
+      : cleaned;
+    
+    // Check: 3-30 chars, alphanumeric + hyphens + underscores
+    return /^[a-z0-9_-]{3,30}$/i.test(codeToValidate);
+  };
+
   // Validation functions
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -222,6 +240,16 @@ const EventCreation: React.FC = () => {
       newErrors.slug = 'Event code must be between 3 and 50 characters';
     } else if (!/^[a-z0-9-]+$/.test(formData.slug)) {
       newErrors.slug = 'Event code can only contain lowercase letters, numbers, and hyphens';
+    }
+
+    // Host code validation (if custom code is enabled)
+    if (useCustomHostCode) {
+      const trimmedHostCode = formData.hostCode.trim();
+      if (!trimmedHostCode) {
+        newErrors.hostCode = 'Host code is required when using custom code';
+      } else if (!validateHostCode(trimmedHostCode)) {
+        newErrors.hostCode = 'Host code must be 3-30 characters (letters, numbers, hyphens, underscores only)';
+      }
     }
 
     // Description validation (max 1000 characters, optional)
@@ -251,7 +279,12 @@ const EventCreation: React.FC = () => {
         description: formData.description.trim() || undefined
       };
 
-      const createdEvent = await api.events.create(eventData);
+      // Add custom host code if enabled (backend will sanitize and prefix)
+      const eventDataWithCode: CreateEventRequest = useCustomHostCode && formData.hostCode.trim()
+        ? { ...eventData, host_code: formData.hostCode.trim() }
+        : eventData;
+
+      const createdEvent = await api.events.create(eventDataWithCode);
       
       // Store the host code for automatic authentication
       localStorage.setItem('hostCode', createdEvent.host_code);
@@ -261,9 +294,20 @@ const EventCreation: React.FC = () => {
       navigate(`/host/${createdEvent.slug}`);
     } catch (err: any) {
       if (err.status === 409) {
-        setErrors({ slug: 'Event code already exists. Please choose a different one.' });
+        // Check if error is about host_code or slug
+        const errorMessage = err.response?.detail || '';
+        if (errorMessage.toLowerCase().includes('host_code') || errorMessage.toLowerCase().includes('host code')) {
+          setErrors({ hostCode: 'This host code is already in use. Please choose a different one.' });
+        } else {
+          setErrors({ slug: 'Event code already exists. Please choose a different one.' });
+        }
       } else if (err.status === 422) {
-        setErrors({ general: 'Invalid input. Please check your entries and try again.' });
+        const errorMessage = err.response?.detail || '';
+        if (errorMessage.toLowerCase().includes('host_code') || errorMessage.toLowerCase().includes('host code')) {
+          setErrors({ hostCode: 'Invalid host code format. Must be host_[a-z0-9]{12} (e.g., host_abc123def456)' });
+        } else {
+          setErrors({ general: 'Invalid input. Please check your entries and try again.' });
+        }
       } else {
         setErrors({ general: 'Failed to create event. Please try again.' });
       }
@@ -352,6 +396,78 @@ const EventCreation: React.FC = () => {
               />
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
               <p className="mt-1 text-xs text-gray-500">{formData.description.length}/1000 characters</p>
+            </div>
+
+            {/* Custom Host Code Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center mb-3">
+                <input
+                  type="checkbox"
+                  id="useCustomHostCode"
+                  checked={useCustomHostCode}
+                  onChange={(e) => {
+                    setUseCustomHostCode(e.target.checked);
+                    if (!e.target.checked) {
+                      setFormData(prev => ({ ...prev, hostCode: '' }));
+                      setErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.hostCode;
+                        return newErrors;
+                      });
+                    }
+                  }}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="useCustomHostCode" className="ml-2 block text-sm font-medium text-gray-700">
+                  Use custom host code
+                </label>
+              </div>
+              
+              {useCustomHostCode && (
+                <div>
+                  <label htmlFor="hostCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    Custom Host Code *
+                  </label>
+                  <input
+                    type="text"
+                    id="hostCode"
+                    value={formData.hostCode}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hostCode: e.target.value }))}
+                    onBlur={() => {
+                      // Validate on blur
+                      if (formData.hostCode.trim() && !validateHostCode(formData.hostCode.trim())) {
+                        setErrors(prev => ({ 
+                          ...prev, 
+                          hostCode: 'Host code must be 3-30 characters (letters, numbers, hyphens, underscores only)' 
+                        }));
+                      } else {
+                        setErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.hostCode;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                      errors.hostCode ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500'
+                    }`}
+                    placeholder="myteam2025"
+                    maxLength={35}
+                    required={useCustomHostCode}
+                  />
+                  {errors.hostCode && <p className="mt-1 text-sm text-red-600">{errors.hostCode}</p>}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter 3-30 characters (letters, numbers, hyphens, underscores). Backend will auto-prefix with "host_".
+                    {formData.hostCode && ` (${formData.hostCode.length} chars)`}
+                  </p>
+                </div>
+              )}
+              
+              {!useCustomHostCode && (
+                <p className="text-xs text-gray-500 italic">
+                  A secure host code will be automatically generated for you.
+                </p>
+              )}
             </div>
 
             {/* Feature Info */}

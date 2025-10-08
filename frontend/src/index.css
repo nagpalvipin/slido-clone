@@ -59,6 +59,42 @@ body {
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
 
+/* Toast notification animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Question highlight animation (yellow glow fade) */
+@keyframes question-highlight {
+  0% {
+    background-color: rgba(253, 230, 138, 0.6);
+    box-shadow: 0 0 20px rgba(253, 230, 138, 0.8);
+  }
+  50% {
+    background-color: rgba(253, 230, 138, 0.4);
+    box-shadow: 0 0 15px rgba(253, 230, 138, 0.6);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.question-highlight {
+  animation: question-highlight 2s ease-out;
+}
+
 /* Real-time indicator styles */
 .connection-indicator {
   @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;

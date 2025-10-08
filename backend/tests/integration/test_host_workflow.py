@@ -7,6 +7,7 @@ Tests verify end-to-end host scenarios across multiple endpoints.
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 
@@ -26,11 +27,11 @@ class TestHostWorkflowIntegration:
             "slug": "complete-workshop",
             "description": "Full integration test workshop"
         }
-        
+
         event_response = client.post("/api/v1/events", json=event_data)
         assert event_response.status_code == 201
         event = event_response.json()
-        
+
         # Step 2: Host accesses their event dashboard
         headers = {"Authorization": f"Host {event['host_code']}"}
         dashboard_response = client.get(
@@ -39,7 +40,7 @@ class TestHostWorkflowIntegration:
         )
         assert dashboard_response.status_code == 200
         dashboard = dashboard_response.json()
-        
+
         # Verify initial state
         assert len(dashboard["polls"]) == 0
         assert len(dashboard["questions"]) == 0
@@ -55,7 +56,7 @@ class TestHostWorkflowIntegration:
                 {"option_text": "Advanced", "position": 2}
             ]
         }
-        
+
         poll1_response = client.post(
             f"/api/v1/events/{event['id']}/polls",
             json=poll1_data,
@@ -74,7 +75,7 @@ class TestHostWorkflowIntegration:
                 {"option_text": "Discussion", "position": 2}
             ]
         }
-        
+
         poll2_response = client.post(
             f"/api/v1/events/{event['id']}/polls",
             json=poll2_data,
@@ -96,7 +97,7 @@ class TestHostWorkflowIntegration:
             f"/api/v1/events/{event['slug']}/host",
             headers=headers
         ).json()
-        
+
         assert len(updated_dashboard["polls"]) == 2
         active_polls = [p for p in updated_dashboard["polls"] if p["status"] == "active"]
         assert len(active_polls) == 1
@@ -127,13 +128,13 @@ class TestHostWorkflowIntegration:
             f"/api/v1/events/{event['slug']}/host",
             headers=headers
         ).json()
-        
+
         closed_poll = next(p for p in final_dashboard["polls"] if p["id"] == poll1["id"])
         assert closed_poll["status"] == "closed"
-        
+
         # Check vote was recorded
         intermediate_option = next(
-            opt for opt in closed_poll["options"] 
+            opt for opt in closed_poll["options"]
             if opt["option_text"] == "Intermediate"
         )
         assert intermediate_option["vote_count"] == 1

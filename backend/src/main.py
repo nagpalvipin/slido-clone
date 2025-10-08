@@ -7,9 +7,9 @@ FastAPI application with events, polls, questions, and WebSocket support.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api import events, polls, questions, websocket
 from src.core.config import settings
 from src.core.database import Base, engine
-from src.api import events, polls, questions, websocket
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

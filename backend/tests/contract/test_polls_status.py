@@ -7,6 +7,7 @@ Tests verify the poll status management API contract.
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 
@@ -17,13 +18,13 @@ class TestPollsStatusContract:
     def client(self):
         """FastAPI test client."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def sample_event_and_poll(self, client):
         """Create event and poll for testing."""
         import uuid
         unique_id = str(uuid.uuid4())[:8]
-        
+
         # Create event
         event_data = {
             "title": f"Status Test Event {unique_id}",
@@ -33,7 +34,7 @@ class TestPollsStatusContract:
         event_response = client.post("/api/v1/events", json=event_data)
         assert event_response.status_code == 201
         event = event_response.json()
-        
+
         # Create poll
         poll_data = {
             "question_text": "Status Test Poll",
@@ -51,20 +52,20 @@ class TestPollsStatusContract:
         )
         assert poll_response.status_code == 201
         poll = poll_response.json()
-        
+
         return {"event": event, "poll": poll}
 
     def test_update_poll_status_success(self, client, sample_event_and_poll):
         """Test successful poll status update."""
         event = sample_event_and_poll["event"]
         poll = sample_event_and_poll["poll"]
-        
+
         response = client.put(
             f"/api/v1/events/{event['id']}/polls/{poll['id']}/status",
             json={"status": "active"},
             headers={"Authorization": f"Host {event['host_code']}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "active"
@@ -75,5 +76,5 @@ class TestPollsStatusContract:
             "/api/v1/events/1/polls/1/status",
             json={"status": "active"}
         )
-        
+
         assert response.status_code == 401

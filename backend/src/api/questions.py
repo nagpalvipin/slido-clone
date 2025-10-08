@@ -1,20 +1,21 @@
 """
 Questions API router for Q&A management endpoints.
 
-Handles question submission, moderation, and upvoting.
+Handles question submission and upvoting. All questions are automatically approved.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
-from sqlalchemy.orm import Session
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
 import uuid
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.core.security import SecurityUtils
 from src.services.event_service import EventService
 from src.services.question_service import QuestionService
-from src.models.question import QuestionStatus
+from src.api import websocket
 
 router = APIRouter(prefix="/api/v1", tags=["questions"])
 
@@ -24,17 +25,12 @@ class QuestionSubmitRequest(BaseModel):
     question_text: str = Field(..., min_length=1, max_length=1000)
 
 
-class QuestionModerationRequest(BaseModel):
-    status: str = Field(..., pattern="^(submitted|approved|answered|rejected)$")
-
-
 class QuestionResponse(BaseModel):
     id: int
     question_text: str
-    status: str
     created_at: str
     upvote_count: int
-    
+
     class Config:
         from_attributes = True
 
@@ -58,7 +54,7 @@ async def submit_question(
     """Submit a new question (attendee action)."""
     # Get attendee session ID
     session_id = get_attendee_session_id(request)
-    
+
     # Submit question
     question_service = QuestionService(db)
     question = question_service.submit_question(
@@ -66,14 +62,18 @@ async def submit_question(
         question_text=question_data.question_text,
         attendee_session_id=session_id
     )
-    
-    return QuestionResponse(
+
+    response = QuestionResponse(
         id=question.id,
         question_text=question.question_text,
-        status=question.status.value,
         created_at=question.created_at.isoformat() + "Z",
         upvote_count=question.upvote_count
     )
+
+    # Broadcast question creation via WebSocket
+    await websocket.broadcast_question_submitted(event_id, response.model_dump())
+
+    return response
 
 
 @router.post("/events/{event_id}/questions/{question_id}/upvote")
@@ -86,56 +86,15 @@ async def upvote_question(
     """Upvote a question (attendee action)."""
     # Get attendee session ID
     session_id = get_attendee_session_id(request)
-    
+
     # Record upvote
     question_service = QuestionService(db)
     result = question_service.upvote_question(question_id, session_id, event_id)
-    
+
+    # Broadcast upvote via WebSocket
+    await websocket.broadcast_question_upvoted(event_id, question_id, result["upvote_count"])
+
     return result
-
-
-@router.put("/events/{event_id}/questions/{question_id}/status", response_model=QuestionResponse)
-async def moderate_question(
-    event_id: int,
-    question_id: int,
-    moderation_data: QuestionModerationRequest,
-    authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db)
-):
-    """Moderate a question (host only)."""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    try:
-        host_code = SecurityUtils.extract_host_code_from_header(authorization)
-    except HTTPException:
-        raise
-    
-    # Verify host has access to event
-    event_service = EventService(db)
-    event = event_service.verify_host_access(event_id, host_code)
-    
-    # Moderate question
-    question_service = QuestionService(db)
-    question = question_service.moderate_question(question_id, moderation_data.status)
-    
-    # Verify question belongs to event
-    if question.event_id != event_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Question not found in this event"
-        )
-    
-    return QuestionResponse(
-        id=question.id,
-        question_text=question.question_text,
-        status=question.status.value,
-        created_at=question.created_at.isoformat() + "Z",
-        upvote_count=question.upvote_count
-    )
 
 
 @router.get("/events/{event_id}/questions", response_model=List[QuestionResponse])
@@ -150,25 +109,84 @@ async def get_event_questions(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization header required"
         )
-    
+
     try:
         host_code = SecurityUtils.extract_host_code_from_header(authorization)
     except HTTPException:
         raise
-    
+
     # Verify host has access to event
     event_service = EventService(db)
     event = event_service.verify_host_access(event_id, host_code)
-    
+
     # Get questions
     question_service = QuestionService(db)
     questions = question_service.get_questions_for_event(event_id)
-    
+
     return [
         QuestionResponse(
             id=q.id,
             question_text=q.question_text,
-            status=q.status.value,
+            created_at=q.created_at.isoformat() + "Z",
+            upvote_count=q.upvote_count
+        )
+        for q in questions
+    ]
+
+
+@router.get("/events/{event_id}/questions/public", response_model=List[QuestionResponse])
+async def get_public_questions(
+    event_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all questions for an event (public attendee view - no auth required)."""
+    # Verify event exists
+    event_service = EventService(db)
+    event = event_service.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found"
+        )
+
+    # Get all questions (all questions are public now)
+    question_service = QuestionService(db)
+    questions = question_service.get_questions_for_event(event_id)
+
+    return [
+        QuestionResponse(
+            id=q.id,
+            question_text=q.question_text,
+            created_at=q.created_at.isoformat() + "Z",
+            upvote_count=q.upvote_count
+        )
+        for q in questions
+    ]
+
+
+@router.get("/events/slug/{event_slug}/questions/public", response_model=List[QuestionResponse])
+async def get_public_questions_by_slug(
+    event_slug: str,
+    db: Session = Depends(get_db)
+):
+    """Get all questions for an event by slug (public attendee view - no auth required)."""
+    # Get event by slug
+    event_service = EventService(db)
+    event = event_service.get_event_by_slug(event_slug)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found"
+        )
+
+    # Get all questions
+    question_service = QuestionService(db)
+    questions = question_service.get_questions_for_event(event.id)
+
+    return [
+        QuestionResponse(
+            id=q.id,
+            question_text=q.question_text,
             created_at=q.created_at.isoformat() + "Z",
             upvote_count=q.upvote_count
         )

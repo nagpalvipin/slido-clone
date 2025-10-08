@@ -6,7 +6,6 @@ Tests verify the host view API contract against spec.
 """
 
 import pytest
-from fastapi.testclient import TestClient
 
 
 class TestEventsHostContract:
@@ -29,7 +28,7 @@ class TestEventsHostContract:
 
         # Then: Full host view is returned
         assert response.status_code == 200
-        
+
         # Verify response includes host-only fields
         data = response.json()
         assert data["id"] == sample_event["id"]
@@ -39,7 +38,7 @@ class TestEventsHostContract:
         assert data["host_code"] == sample_event["host_code"]
         assert "created_at" in data
         assert "attendee_count" in data
-        
+
         # Verify polls and questions arrays exist
         assert "polls" in data
         assert "questions" in data

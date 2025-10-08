@@ -5,8 +5,6 @@ These tests MUST FAIL initially to enforce TDD approach.
 Tests verify the events creation API contract against spec.
 """
 
-import pytest
-from fastapi.testclient import TestClient
 
 
 class TestEventsPostContract:
@@ -17,7 +15,7 @@ class TestEventsPostContract:
         # Given: Valid event data
         event_data = {
             "title": "Advanced JavaScript Workshop",
-            "slug": "js-advanced-2025", 
+            "slug": "js-advanced-2025",
             "description": "Deep dive into async patterns and modern JS"
         }
 
@@ -26,7 +24,7 @@ class TestEventsPostContract:
 
         # Then: Event is created successfully
         assert response.status_code == 201
-        
+
         # Verify response structure matches contract
         data = response.json()
         assert "id" in data
@@ -49,7 +47,7 @@ class TestEventsPostContract:
         # Test missing required fields
         response = client.post("/api/v1/events", json={})
         assert response.status_code == 422
-        
+
         errors = response.json()["detail"]
         error_fields = [error["loc"][-1] for error in errors]
         assert "title" in error_fields
@@ -127,7 +125,7 @@ class TestEventsPostContract:
 
         # Try to create second event with same slug
         duplicate_data = {
-            "title": "Second Event", 
+            "title": "Second Event",
             "slug": "unique-slug"
         }
         response = client.post("/api/v1/events", json=duplicate_data)
