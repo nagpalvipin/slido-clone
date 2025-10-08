@@ -137,3 +137,36 @@ class QuestionService:
             vote_count_subquery.c.vote_count.desc().nullslast(),
             Question.created_at.asc()
         ).all()
+
+    def toggle_answered(self, question_id: int, event_id: int) -> Question:
+        """Toggle the answered status of a question.
+        
+        Args:
+            question_id: ID of the question to toggle
+            event_id: ID of the event (for validation)
+            
+        Returns:
+            Updated Question object
+            
+        Raises:
+            HTTPException: If question not found or doesn't belong to event
+        """
+        # Get question
+        question = self.db.query(Question).filter(
+            Question.id == question_id,
+            Question.event_id == event_id
+        ).first()
+        
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
+        
+        # Toggle the answered status
+        question.is_answered = not question.is_answered
+        
+        self.db.commit()
+        self.db.refresh(question)
+        
+        return question

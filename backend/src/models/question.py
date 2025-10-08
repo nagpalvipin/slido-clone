@@ -4,7 +4,7 @@ Question model for Q&A functionality.
 All questions are automatically approved when submitted.
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -25,6 +25,9 @@ class Question(Base):
 
     # Question content
     question_text = Column(Text, nullable=False)
+
+    # Status
+    is_answered = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

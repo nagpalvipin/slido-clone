@@ -30,6 +30,7 @@ class QuestionResponse(BaseModel):
     question_text: str
     created_at: str
     upvote_count: int
+    is_answered: bool = False
 
     class Config:
         from_attributes = True
@@ -158,7 +159,8 @@ async def get_public_questions(
             id=q.id,
             question_text=q.question_text,
             created_at=q.created_at.isoformat() + "Z",
-            upvote_count=q.upvote_count
+            upvote_count=q.upvote_count,
+            is_answered=q.is_answered
         )
         for q in questions
     ]
@@ -188,7 +190,40 @@ async def get_public_questions_by_slug(
             id=q.id,
             question_text=q.question_text,
             created_at=q.created_at.isoformat() + "Z",
-            upvote_count=q.upvote_count
+            upvote_count=q.upvote_count,
+            is_answered=q.is_answered
         )
         for q in questions
     ]
+
+
+@router.put("/events/{event_id}/questions/{question_id}/answered", response_model=QuestionResponse)
+async def toggle_question_answered(
+    event_id: int,
+    question_id: int,
+    db: Session = Depends(get_db),
+    x_host_code: Optional[str] = Header(None, alias="x-host-code")
+):
+    """Toggle question answered status (host only)."""
+    # Validate host code
+    if not x_host_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only event host can mark questions as answered"
+        )
+    
+    # Verify event exists and host has access
+    event_service = EventService(db)
+    event = event_service.verify_host_access(event_id, x_host_code)
+    
+    # Toggle answered status
+    question_service = QuestionService(db)
+    question = question_service.toggle_answered(question_id, event_id)
+    
+    return QuestionResponse(
+        id=question.id,
+        question_text=question.question_text,
+        created_at=question.created_at.isoformat() + "Z",
+        upvote_count=question.upvote_count,
+        is_answered=question.is_answered
+    )
